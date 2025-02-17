@@ -1,0 +1,12 @@
+.vscode/
+.tmp/
+node_modules/
+package-lock.json
+*.0
+*.1
+*.2
+*.3
+*.bak
+*.old
+*.new
+*.diff
