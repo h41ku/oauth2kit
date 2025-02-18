@@ -1,5 +1,7 @@
 import query from '../helpers/query.js'
 import { clearCookies } from '../helpers/cookies.js'
+import extractToken from '../helpers/extractToken.js'
+import unexpectedProviderError from '../errors/unexpectedProvider.js'
 
 const buildFn = (options) => async ({ accessToken, query }) => await query({
     ...options,
@@ -7,10 +9,11 @@ const buildFn = (options) => async ({ accessToken, query }) => await query({
 })
 
 export default (options = {}) => {
+    const { provider: providerExpected } = options
     const fnOptions = options?.plugins?.logout
     let logout
     if (!fnOptions) {
-        logout = () => {}
+        logout = () => ({ status: 200 })
     } else if (fnOptions instanceof Function) {
         logout = fnOptions
     } else if (typeof fnOptions === 'string') {
@@ -19,17 +22,22 @@ export default (options = {}) => {
         logout = buildFn(fnOptions)
     }
     return async (request, response) => {
-        const { accessToken } = (request.oauth2 || {})
+        const { provider } = request.cookies
+        if (provider !== providerExpected) {
+            unexpectedProviderError(provider, providerExpected)
+        }
+        const accessToken = request.oauth2
+            ? request.oauth2.accessToken
+            : extractToken(request)
         if (accessToken) {
-            const { status, data, error } = await logout({
+            await logout({
                 request,
                 response,
                 query,
                 accessToken
             })
-// console.log('logout()', { status, data, error })
         }
-        clearCookies(response, [ 'refresh_token', 'expires_at' ])
+        clearCookies(response, [ 'provider', 'refresh_token', 'expires_at' ])
         response.status(204).end()
     }
 }
