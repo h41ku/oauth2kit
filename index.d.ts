@@ -1,5 +1,3 @@
-// common
-
 export type QueryResponse = {
     status: number,
     data: any | undefined,
@@ -59,23 +57,3 @@ export type OAUth2ClientOptions = {
     },
     plugins: PluginsOptions | undefined
 };
-
-// client/express
-
-export type ExpressSyncController = (request: any, response: any) => void;
-export type ExpressAsyncController = (request: any, response: any) => Promise<void>;
-export type ExpressAsyncMiddleware = (request: any, response: any, next: any) => Promise<void>;
-
-export type ExpressOAuth2Client = {
-    controllers: {
-        login: ExpressSyncController,
-        logout: ExpressAsyncController,
-        obtainToken: ExpressAsyncController
-    },
-    middlewares: {
-        refreshToken: ExpressAsyncMiddleware,
-        authenticatedUser: ExpressAsyncMiddleware
-    }
-};
-
-export declare function expressOAuth2Client(options: OAUth2ClientOptions | undefined): ExpressOAuth2Client;

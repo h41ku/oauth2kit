@@ -3,10 +3,15 @@
   "version": "0.0.1",
   "description": "",
   "type": "module",
-  "main": "src/index.js",
-  "types": "types/index.d.ts",
   "exports": {
-    "./client/express": "./src/client/express/index.js"
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./client/express": {
+      "types": "./client/express/index.d.ts",
+      "import": "./client/express/index.js"
+    }
   },
   "scripts": {},
   "keywords": [],
