@@ -7,6 +7,7 @@ First one create a client:
 import createOAuth2Client from 'oauth2kit/client/express'
 
 const client = createOAuth2Client({
+    provider: 'example', // name of OAuth2 provider
     credentials: { // client credentials
         clientId: '...',
         clientSecret: '...',
@@ -19,9 +20,14 @@ const client = createOAuth2Client({
         refreshToken: 'https://auth.example.org/oauth2/token'
     },
     plugins: {
+        login: {
+            prepareState: async () => Date.now().toString() // just example
+        },
         obtainToken: { // redirect under application
             error: '/',
-            success: '/'
+            success: '/',
+            acceptState: async (state) => true,
+            acceptScope: async (scope) => true
         },
         refreshToken: {
             reservedTime: 5, // keep some reserved time (in seconds) before token expires
@@ -30,7 +36,7 @@ const client = createOAuth2Client({
         authenticatedUser: { // get info about authenticated user
             method: 'get',
             url: 'https://auth.example.org/api/v1/users/me',
-            status: 200, // expected http status
+            expectedStatus: 200, // expected http status
             selector: ({ user }) => user // select property from json reply
         },
         logout: { // notify OAuth2 server when logging out
