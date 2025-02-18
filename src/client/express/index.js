@@ -4,7 +4,7 @@ import obtainToken from './controllers/obtainToken.js'
 import refreshToken from './middlewares/refreshToken.js'
 import authenticatedUser from './middlewares/authenticatedUser.js'
 
-const createOAuth2Client = (options = {}) => {
+const expressOAuth2Client = (options = {}) => {
     return {
         controllers: {
             login: login(options),
@@ -18,4 +18,4 @@ const createOAuth2Client = (options = {}) => {
     }
 }
 
-export default createOAuth2Client
+export default expressOAuth2Client
