@@ -15,7 +15,8 @@ export type PluginObtainTokenOptions = {
 
 export type PluginRefreshTokenOptions = {
     reservedTime: number | undefined,
-    header: string | undefined
+    header: string | undefined,
+    condition: ((request: any) => boolean) | undefined;
 };
 
 export type PluginAuthenticatedUserOptions = {
