@@ -22,14 +22,14 @@ export default (options = {}) => {
         logout = buildFn(fnOptions)
     }
     return async (request, response) => {
-        const { provider } = request.cookies
-        if (provider !== providerExpected) {
-            unexpectedProviderError(provider, providerExpected)
-        }
         const accessToken = request.oauth2
             ? request.oauth2.accessToken
             : extractToken(request)
         if (accessToken) {
+            const { provider } = request.cookies
+            if (provider !== providerExpected) {
+                unexpectedProviderError(provider, providerExpected)
+            }
             await logout({
                 request,
                 response,
