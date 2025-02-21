@@ -19,21 +19,23 @@ export default (options = {}) => {
     const { refreshToken } = (options?.endpoints || {})
     const {
         reservedTime,
-        header
+        header,
+        condition
     } = {
         reservedTime: 5, // in seconds
         header: undefined,
+        condition: (request) => true,
         ...(options?.plugins?.refreshToken)
     }
     return async (request, response, next) => {
         const { provider, refresh_token, expires_at } = request.cookies
-        if (provider !== providerExpected) {
-            unexpectedProviderError(provider, providerExpected)
-        } else if (!refresh_token) {
+        if (!refresh_token) {
             response.status(401).end()
+        } else if (provider !== providerExpected) {
+            unexpectedProviderError(provider, providerExpected)
         } else {
             const access_token = extractToken(request)
-            if (!access_token || (parseInt(expires_at) - reservedTime) * 1000 <= Date.now()) {
+            if ((!access_token || (parseInt(expires_at) - reservedTime) * 1000 <= Date.now()) && condition(request)) {
                 const { status, data: token } = await query({
                     url: refreshToken,
                     method: 'post',
