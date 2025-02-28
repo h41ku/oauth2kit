@@ -43,7 +43,7 @@ export type PluginsOptions = {
     logout: PluginLogoutOptions | QueryFn | undefined
 };
 
-export type OAUth2ClientOptions = {
+export type OAuth2ClientOptions = {
     provider: string | undefined,
     credentials: {
         clientId: string,
