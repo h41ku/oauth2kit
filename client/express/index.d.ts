@@ -1,4 +1,4 @@
-import type { OAUth2ClientOptions } from '../../index.d.ts';
+import type { OAuth2ClientOptions } from '../../index.d.ts';
 
 declare module 'oauth2kit/client/express' {
 
@@ -17,7 +17,7 @@ declare module 'oauth2kit/client/express' {
         }
     };
 
-    export declare function expressOAuth2Client(options: OAUth2ClientOptions | undefined): ExpressOAuth2Client;
+    export declare function expressOAuth2Client(options: OAuth2ClientOptions | undefined): ExpressOAuth2Client;
 
     export = expressOAuth2Client;
 };
