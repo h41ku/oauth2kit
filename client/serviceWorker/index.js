@@ -34,6 +34,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         isPayloadChanged: (previous, next) => true,
         ...(options.refreshToken || {})
     }
+    let isPending
     let isUndefined = true
     let accessToken
     let payload
@@ -57,17 +58,19 @@ const serviceWorkerOAuth2Client = (options = {}) => {
             await handlers[i]()
     }
     const query = fetchBaseQuery({
+        logErrors: true,
+        credentials: 'include',
+        cache: 'reload',
+        mode: 'cors',
         middlewares: [
             accessTokenMiddleware({
                 getAccessToken: (payload) => accessToken,
-                setAccessToken: (token) => { accessToken = token },
-                getUpdatedAccessToken: async () => undefined,
                 ...(prepareAuthorizationHeaders ? { getAuthorizationHeaders: prepareAuthorizationHeaders } : {})
             })
         ],
         ...defaultQueryOptions
     })
-    const queryRefresh = fetchBaseQuery({ // TODO abort signal
+    const queryRefresh = fetchBaseQuery({
         logErrors: true,
         credentials: 'include',
         cache: 'reload',
@@ -75,12 +78,17 @@ const serviceWorkerOAuth2Client = (options = {}) => {
             accessTokenMiddleware({
                 getAccessToken: () => accessToken,
                 setAccessToken: (token) => { accessToken = token },
+                removeAccessToken: () => { accessToken = undefined },
                 getUpdatedAccessToken: extractAccessToken,
                 ...(prepareAuthorizationHeaders ? { getAuthorizationHeaders: prepareAuthorizationHeaders } : {})
             })
         ]
     })
     const refresh = async () => {
+        if (isPending) {
+            return
+        }
+        isPending = true
         const previousAccessToken = accessToken
         const previousPayload = payload
         const response = await queryRefresh({ url: endpoint })
@@ -98,11 +106,12 @@ const serviceWorkerOAuth2Client = (options = {}) => {
                 || (previousAccessToken && !accessToken)
                 || (previousPayload === undefined && payload !== undefined)
                 || (previousPayload !== undefined && payload === undefined)
-                || isPayloadChanged(previousPayload, payload)
+                || (previousPayload && payload && isPayloadChanged(previousPayload, payload))
             ) {
                 await dispatch()
             }
         }
+        isPending = false
     }
     let timer
     let refreshing
@@ -115,12 +124,11 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         }
     }
     const start = () => {
-        if (!refreshing) {
-            refreshing = true
-            tick()
-        }
+        clearTimeout(timer)
+        refreshing = true
+        tick()
     }
-    const stop = () => { // TODO abort signal
+    const stop = () => {
         refreshing = false
         clearTimeout(timer)
     }
