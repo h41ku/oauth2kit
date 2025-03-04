@@ -22,6 +22,6 @@
   "author": "h41ku <h41ku.c0de@ya.ru>",
   "license": "MIT",
   "dependencies": {
-    "fetchbasequery": "^0.0.2"
+    "fetchbasequery": "^0.1.1"
   }
 }
