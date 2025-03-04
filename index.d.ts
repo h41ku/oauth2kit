@@ -26,21 +26,21 @@ export type PluginAuthenticatedUserOptions = {
     selector: (data: any) => any
 };
 
-export type PluginLogoutOptions = {
+export type PluginSignOutOptions = {
     method: string | undefined,
     url: string | undefined
 };
 
-export type PluginLoginOptions = {
+export type PluginSignInOptions = {
     prepareState: () => Promise<string>
 };
 
 export type PluginsOptions = {
-    login: PluginLoginOptions | undefined,
+    signIn: PluginSignInOptions | undefined,
     obtainToken: PluginObtainTokenOptions | undefined,
     refreshToken: PluginRefreshTokenOptions | undefined,
     authenticatedUser: PluginAuthenticatedUserOptions | QueryFn | undefined,
-    logout: PluginLogoutOptions | QueryFn | undefined
+    signOut: PluginSignOutOptions | QueryFn | undefined
 };
 
 export type OAuth2ClientOptions = {

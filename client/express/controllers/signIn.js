@@ -8,7 +8,7 @@ export default (options = {}) => async (request, response) => {
         prepareState
     } = {
         prepareState: async () => Date.now(),
-        ...(options?.plugins?.login || {})
+        ...(options?.plugins?.signIn || {})
     }
     const { authorize } = (options?.endpoints || {})
     const state = await prepareState()

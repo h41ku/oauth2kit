@@ -7,8 +7,8 @@ declare module 'oauth2kit/client/express' {
 
     export type ExpressOAuth2Client = {
         controllers: {
-            login: ExpressAsyncController,
-            logout: ExpressAsyncController,
+            signIn: ExpressAsyncController,
+            signOut: ExpressAsyncController,
             obtainToken: ExpressAsyncController
         },
         middlewares: {

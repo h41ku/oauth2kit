@@ -1,5 +1,5 @@
-import login from './controllers/login.js'
-import logout from './controllers/logout.js'
+import signIn from './controllers/signIn.js'
+import signOut from './controllers/signOut.js'
 import obtainToken from './controllers/obtainToken.js'
 import refreshToken from './middlewares/refreshToken.js'
 import authenticatedUser from './middlewares/authenticatedUser.js'
@@ -7,8 +7,8 @@ import authenticatedUser from './middlewares/authenticatedUser.js'
 const expressOAuth2Client = (options = {}) => {
     return {
         controllers: {
-            login: login(options),
-            logout: logout(options),
+            signIn: signIn(options),
+            signOut: signOut(options),
             obtainToken: obtainToken(options)
         },
         middlewares: {

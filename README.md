@@ -20,7 +20,7 @@ const client = createOAuth2Client({
         refreshToken: 'https://auth.example.org/oauth2/token'
     },
     plugins: {
-        login: {
+        signIn: {
             prepareState: async () => Date.now().toString() // just example
         },
         obtainToken: { // redirect under application
@@ -39,9 +39,9 @@ const client = createOAuth2Client({
             expectedStatus: 200, // expected http status
             selector: ({ user }) => user // select property from json reply
         },
-        logout: { // notify OAuth2 server when logging out
+        signOut: { // notify OAuth2 server when logging out
             method: 'get',
-            url: 'https://auth.example.org/api/v1/users/logout'
+            url: 'https://auth.example.org/api/v1/users/signOut'
         }
     }
 })
@@ -59,11 +59,11 @@ app.use(cookieParser()) // required by middleware
 // omit other middlewares...
 
 // bind client's controllers
-const { login, obtainToken, logout } = client.controllers
+const { signIn, obtainToken, signOut } = client.controllers
 const oauth2Router = new Router()
 oauth2Router.get('/obtainToken', throwable(obtainToken))
-oauth2Router.get('/login', throwable(login))
-oauth2Router.get('/logout', throwable(logout))
+oauth2Router.get('/signIn', throwable(signIn))
+oauth2Router.get('/signOut', throwable(signOut))
 app.use('/oauth2', oauth2Router)
 
 // now lets create restricted area

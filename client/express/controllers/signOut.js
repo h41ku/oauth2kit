@@ -10,16 +10,16 @@ const buildFn = (options) => async ({ accessToken, query }) => await query({
 
 export default (options = {}) => {
     const { provider: providerExpected } = options
-    const fnOptions = options?.plugins?.logout
-    let logout
+    const fnOptions = options?.plugins?.signOut
+    let signOut
     if (!fnOptions) {
-        logout = () => ({ status: 200 })
+        signOut = () => ({ status: 200 })
     } else if (fnOptions instanceof Function) {
-        logout = fnOptions
+        signOut = fnOptions
     } else if (typeof fnOptions === 'string') {
-        logout = buildFn({ url: fnOptions })
+        signOut = buildFn({ url: fnOptions })
     } else {
-        logout = buildFn(fnOptions)
+        signOut = buildFn(fnOptions)
     }
     return async (request, response) => {
         const accessToken = request.oauth2
@@ -30,7 +30,7 @@ export default (options = {}) => {
             if (provider !== providerExpected) {
                 unexpectedProviderError(provider, providerExpected)
             }
-            await logout({
+            await signOut({
                 request,
                 response,
                 query,
