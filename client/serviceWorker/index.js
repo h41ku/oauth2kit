@@ -57,19 +57,6 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         for (let i = 0; i < handlers.length; i ++)
             await handlers[i]()
     }
-    const query = fetchBaseQuery({
-        logErrors: true,
-        credentials: 'include',
-        cache: 'reload',
-        mode: 'cors',
-        middlewares: [
-            accessTokenMiddleware({
-                getAccessToken: (payload) => accessToken,
-                ...(prepareAuthorizationHeaders ? { getAuthorizationHeaders: prepareAuthorizationHeaders } : {})
-            })
-        ],
-        ...defaultQueryOptions
-    })
     const queryRefresh = fetchBaseQuery({
         logErrors: true,
         credentials: 'include',
@@ -84,6 +71,22 @@ const serviceWorkerOAuth2Client = (options = {}) => {
             })
         ]
     })
+    const query = fetchBaseQuery({
+        logErrors: true,
+        credentials: 'include',
+        cache: 'reload',
+        mode: 'cors',
+        middlewares: [
+            accessTokenMiddleware({
+                getAccessToken: (payload) => accessToken,
+                ...(prepareAuthorizationHeaders ? { getAuthorizationHeaders: prepareAuthorizationHeaders } : {})
+            })
+        ],
+        ...defaultQueryOptions
+    })
+    let timer
+    let refreshing
+    let dispatchRequired
     const refresh = async () => {
         if (isPending) {
             return
@@ -102,19 +105,19 @@ const serviceWorkerOAuth2Client = (options = {}) => {
                 payload = undefined
             }
             if (false
+                || dispatchRequired
                 || (!previousAccessToken && accessToken)
                 || (previousAccessToken && !accessToken)
                 || (previousPayload === undefined && payload !== undefined)
                 || (previousPayload !== undefined && payload === undefined)
                 || (previousPayload && payload && isPayloadChanged(previousPayload, payload))
             ) {
+                dispatchRequired = false
                 await dispatch()
             }
         }
         isPending = false
     }
-    let timer
-    let refreshing
     const tick = () => {
         if (refreshing) {
             refresh().then(() => {
@@ -126,6 +129,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
     const start = () => {
         clearTimeout(timer)
         refreshing = true
+        dispatchRequired = true
         tick()
     }
     const stop = () => {
