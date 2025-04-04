@@ -1,3 +1,5 @@
+import isFunction from '../../../shared/helpers/isFunction.js'
+import isString from '../../../shared/helpers/isString.js'
 import query from '../helpers/query.js'
 import unexpectedProviderError from '../errors/unexpectedProvider.js'
 
@@ -15,9 +17,9 @@ export default (options = {}) => {
     let responseOptions = {}
     if (!fnOptions) {
         getAuthenticatedUser = () => ({ status: defaultExpectedStatus })
-    } else if (fnOptions instanceof Function) {
+    } else if (isFunction(fnOptions)) {
         getAuthenticatedUser = fnOptions
-    } else if (typeof fnOptions === 'string') {
+    } else if (isString(fnOptions)) {
         getAuthenticatedUser = buildFn({ url: fnOptions })
     } else {
         const { selector, expectedStatus, ...queryOptions } = fnOptions
