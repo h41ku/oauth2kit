@@ -1,34 +1,42 @@
 import fetchBaseQuery, { accessToken as accessTokenMiddleware } from 'fetchbasequery'
 
+const INITIAL_REFRESH_RATE = 60 // in seconds
+
 const serviceWorkerOAuth2Client = (options = {}) => {
     const {
         prepareAuthorizationHeaders
     } = options
     const {
         matcher,
+        isSignIn,
         isSignOut,
         fallback,
         ...defaultQueryOptions
     } = {
         matcher: request => true,
+        isSignIn: request => false,
         isSignOut: request => false,
         fallback: fetch,
         ...(options.fetch || {})
     }
     const {
-        refreshRate,
         endpoint,
         isExpectedStatus,
         extractAccessToken,
+        extractRefreshRate,
         extractPayload,
         isPayloadChanged
     } = {
-        refreshRate: 60, // in seconds
         endpoint: location.origin + '/oauth2/token',
         isExpectedStatus: status => status === 200 || status === 401,
         extractAccessToken: async (response) => {
             const { access_token } = await (response.clone()).json()
             return access_token
+        },
+        extractRefreshRate: async (response) => {
+            const { expires_in } = await (response.clone()).json()
+            const reservedTime = 5
+            return Math.max(expires_in - reservedTime, 0)
         },
         extractPayload: async (response, accessToken) => undefined,
         isPayloadChanged: (previous, next) => true,
@@ -37,6 +45,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
     let isPending
     let isUndefined = true
     let accessToken
+    let refreshRate = INITIAL_REFRESH_RATE
     let payload
     const getState = () => ({
         isUndefined,
@@ -66,7 +75,13 @@ const serviceWorkerOAuth2Client = (options = {}) => {
                 getAccessToken: () => accessToken,
                 setAccessToken: (token) => { accessToken = token },
                 removeAccessToken: () => { accessToken = undefined },
-                getUpdatedAccessToken: extractAccessToken,
+                getUpdatedAccessToken: async (response) => {
+                    const accessToken = await extractAccessToken(response)
+                    if (accessToken) {
+                        refreshRate = await extractRefreshRate(response)
+                    }
+                    return accessToken
+                },
                 ...(prepareAuthorizationHeaders ? { getAuthorizationHeaders: prepareAuthorizationHeaders } : {})
             })
         ]
@@ -103,6 +118,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
             if (!accessToken) { // user is not authorized
                 refreshing = false
                 payload = undefined
+                refreshRate = INITIAL_REFRESH_RATE
             }
             if (false
                 || dispatchRequired
@@ -143,8 +159,14 @@ const serviceWorkerOAuth2Client = (options = {}) => {
                 ? query({ request })
                 : fallback(request)
         )
-        if (match && isSignOut(request)) {
-            refresh()
+        if (match) {
+            if (isSignIn(request)) {
+                accessToken = await extractAccessToken(response)
+                refreshRate = await extractRefreshRate(response)
+                refresh()
+            } else if (isSignOut(request)) {
+                refresh()
+            }
         }
         return response
     }
