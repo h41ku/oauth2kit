@@ -4,8 +4,8 @@ declare module 'oauth2kit/client/serviceWorker' {
 
     export type ClientState = {
         isUndefined: boolean,
-        accessToken: string | undefined,
-        payload: any | undefined
+        accessToken?: string,
+        payload?: any
     };
 
     export type StateChangeCallback = () => Promise<void>;
@@ -32,31 +32,33 @@ declare module 'oauth2kit/client/serviceWorker' {
     export type Fetcher = (request: Request) => Promise<Response>;
 
     export type ServiceWorkerFetchOptions = {
-        matcher: Matcher | undefined,
-        isSignOut: Matcher | undefined,
-        fallback: Fetcher | undefined
+        matcher?: Matcher,
+        isSignIn?: Matcher,
+        isSignOut?: Matcher,
+        fallback?: Fetcher
     };
 
     export type StatusMatcher = (status: number) => boolean;
     export type AccessTokenExtractor = (request: Request) => Promise<string>;
+    export type RefreshRateExtractor = (request: Request) => Promise<number>;
     export type PayloadExtractor = (request: Request) => Promise<any | undefined>;
     export type PayloadChangeDetector = (previous: any, next: any) => boolean;
 
     export type ServiceWorkerRefreshTokenOptions = {
-        refreshRate: number | undefined,
-        endpoint: string | undefined,
-        isExpectedStatus: StatusMatcher | undefined,
-        extractAccessToken: AccessTokenExtractor | undefined,
-        extractPayload: PayloadExtractor | undefined,
-        isPayloadChanged: PayloadChangeDetector | undefined
+        endpoint?: string,
+        isExpectedStatus?: StatusMatcher,
+        extractAccessToken?: AccessTokenExtractor,
+        extractRefreshRate?: RefreshRateExtractor,
+        extractPayload?: PayloadExtractor,
+        isPayloadChanged?: PayloadChangeDetector
     };
 
     export type ServiceWorkerOAuth2ClientOptions = {
-        refreshToken: ServiceWorkerRefreshTokenOptions | undefined,
-        fetch: ServiceWorkerFetchOptions | undefined,
+        refreshToken?: ServiceWorkerRefreshTokenOptions,
+        fetch?: ServiceWorkerFetchOptions,
     };
 
-    export declare function serviceWorkerOAuth2Client(options: ServiceWorkerOAuth2ClientOptions | undefined): ServiceWorkerOAuth2Client;
+    export declare function serviceWorkerOAuth2Client(options?: ServiceWorkerOAuth2ClientOptions): ServiceWorkerOAuth2Client;
 
     export = serviceWorkerOAuth2Client;
 };

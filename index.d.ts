@@ -1,34 +1,42 @@
 export type QueryResponse = {
     status: number,
-    data: any | undefined,
-    error: any | undefined
+    data?: any,
+    error?: any
 };
 
-export type QueryFn = (options: any | undefined) => QueryResponse;
+export type QueryFn = (options?: any) => QueryResponse;
 
 export type PluginObtainTokenOptions = {
-    error: string | undefined,
-    success: string | undefined,
-    acceptState: (state: string | undefined) => Promise<boolean>,
-    acceptScope: (scope: string | undefined) => Promise<boolean>
+    errorUrl?: string,
+    successUrl?: string,
+    timeout?: number,
+    signal?: AbortSignal,
+    acceptState: (state?: string) => Promise<boolean>,
+    acceptScope: (scope?: string) => Promise<boolean>
 };
 
 export type PluginRefreshTokenOptions = {
-    reservedTime: number | undefined,
-    header: string | undefined,
-    condition: ((request: any) => boolean) | undefined;
+    reservedTime?: number,
+    header?: string,
+    timeout?: number,
+    signal?: AbortSignal,
+    condition?: ((request: any) => boolean);
 };
 
 export type PluginAuthenticatedUserOptions = {
-    method: string | undefined,
-    url: string | undefined,
-    expectedStatus: number | undefined,
+    method?: string,
+    url?: string,
+    timeout?: number,
+    signal?: AbortSignal,
+    expectedStatus?: number,
     selector: (data: any) => any
 };
 
 export type PluginSignOutOptions = {
-    method: string | undefined,
-    url: string | undefined
+    method?: string,
+    url?: string,
+    timeout?: number,
+    signal?: AbortSignal,
 };
 
 export type PluginSignInOptions = {
@@ -36,25 +44,29 @@ export type PluginSignInOptions = {
 };
 
 export type PluginsOptions = {
-    signIn: PluginSignInOptions | undefined,
-    obtainToken: PluginObtainTokenOptions | undefined,
-    refreshToken: PluginRefreshTokenOptions | undefined,
-    authenticatedUser: PluginAuthenticatedUserOptions | QueryFn | undefined,
-    signOut: PluginSignOutOptions | QueryFn | undefined
+    signIn?: PluginSignInOptions,
+    obtainToken?: PluginObtainTokenOptions,
+    refreshToken?: PluginRefreshTokenOptions,
+    authenticatedUser?: PluginAuthenticatedUserOptions | QueryFn,
+    signOut?: PluginSignOutOptions | QueryFn
 };
 
+export type OAuth2ClientCredentials = {
+    clientId: string,
+    clientSecret: string,
+    redirectUri: string,
+    scope: string
+};
+
+export type OAuth2ClientCredentialsFn = () => OAuth2ClientCredentials;
+
 export type OAuth2ClientOptions = {
-    provider: string | undefined,
-    credentials: {
-        clientId: string,
-        clientSecret: string,
-        redirectUri: string,
-        scope: string
-    },
+    provider?: string,
+    credentials: OAuth2ClientCredentials | OAuth2ClientCredentialsFn,
     endpoints: {
         authorize: string,
         getAccessToken: string,
         refreshToken: string
     },
-    plugins: PluginsOptions | undefined
+    plugins?: PluginsOptions
 };

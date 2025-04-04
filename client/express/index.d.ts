@@ -17,7 +17,7 @@ declare module 'oauth2kit/client/express' {
         }
     };
 
-    export declare function expressOAuth2Client(options: OAuth2ClientOptions | undefined): ExpressOAuth2Client;
+    export declare function expressOAuth2Client(options?: OAuth2ClientOptions): ExpressOAuth2Client;
 
     export = expressOAuth2Client;
 };
