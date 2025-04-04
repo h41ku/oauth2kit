@@ -1,3 +1,5 @@
+import isFunction from '../../../shared/helpers/isFunction.js'
+import isString from '../../../shared/helpers/isString.js'
 import query from '../helpers/query.js'
 import { clearCookies } from '../helpers/cookies.js'
 import extractToken from '../helpers/extractToken.js'
@@ -14,9 +16,9 @@ export default (options = {}) => {
     let signOut
     if (!fnOptions) {
         signOut = () => ({ status: 200 })
-    } else if (fnOptions instanceof Function) {
+    } else if (isFunction(fnOptions)) {
         signOut = fnOptions
-    } else if (typeof fnOptions === 'string') {
+    } else if (isString(fnOptions)) {
         signOut = buildFn({ url: fnOptions })
     } else {
         signOut = buildFn(fnOptions)
