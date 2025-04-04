@@ -1,26 +1,30 @@
+import isFunction from '../../../shared/helpers/isFunction.js'
 import query from '../helpers/query.js'
 import extractToken from '../helpers/extractToken.js'
 import { setCookies, clearCookies } from '../helpers/cookies.js'
 import unexpectedProviderError from '../errors/unexpectedProvider.js'
 
-const createContext = (request, provider, accessToken) => {
+const createContext = (request, provider, accessToken, expiresAt) => {
     request.oauth2 = {
         ...(provider ? { provider } : {}),
-        accessToken
+        accessToken,
+        expiresAt
     }
 }
 
 export default (options = {}) => {
-    const { provider: providerExpected } = options
+    const { provider: providerExpected, credentials } = options
     const {
         clientId: client_id,
         clientSecret: client_secret
-    } = (options?.credentials || {})
+    } = (isFunction(credentials) ? credentials() : credentials) || {}
     const { refreshToken } = (options?.endpoints || {})
     const {
         reservedTime,
         header,
-        condition
+        condition,
+        timeout,
+        signal
     } = {
         reservedTime: 5, // in seconds
         header: undefined,
@@ -44,7 +48,9 @@ export default (options = {}) => {
                         refresh_token,
                         client_id,
                         client_secret
-                    })
+                    }),
+                    timeout,
+                    signal
                 })
                 if (status === 0) {
                     response.status(503).end()
@@ -59,7 +65,7 @@ export default (options = {}) => {
                     if (header) {
                         response.set({ [header]: access_token })
                     }
-                    createContext(request, provider, access_token)
+                    createContext(request, provider, access_token, expires_at)
                     next()
                 } else {
                     clearCookies(response, [
@@ -70,7 +76,7 @@ export default (options = {}) => {
                     response.status(401).end()
                 }
             } else {
-                createContext(request, provider, access_token)
+                createContext(request, provider, access_token, parseInt(expires_at))
                 next()
             }
         }

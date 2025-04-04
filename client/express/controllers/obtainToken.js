@@ -1,15 +1,18 @@
+import isFunction from '../../../shared/helpers/isFunction.js'
 import query from '../helpers/query.js'
 import { setCookies } from '../helpers/cookies.js'
 
 export default (options = {}) => {
 
-    const { provider } = options
+    const { provider, credentials } = options
 
     const {
         errorUrl,
         successUrl,
         acceptState,
-        acceptScope
+        acceptScope,
+        timeout,
+        signal
     } = {
         errorUrl: '/',
         successUrl: '/',
@@ -22,7 +25,7 @@ export default (options = {}) => {
         clientId: client_id,
         clientSecret: client_secret,
         redirectUri: redirect_uri,
-    } = (options?.credentials || {})
+    } = (isFunction(credentials) ? credentials() : credentials) || {}
 
     const { getAccessToken } = (options?.endpoints || {})
 
@@ -63,7 +66,9 @@ export default (options = {}) => {
                 client_secret,
                 code,
                 redirect_uri
-            })
+            }),
+            timeout,
+            signal
         })
 
         if (error) {
