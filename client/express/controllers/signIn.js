@@ -1,9 +1,12 @@
+import isFunction from '../../../shared/helpers/isFunction.js'
+
 export default (options = {}) => async (request, response) => {
+    const { credentials } = options
     const {
         clientId: client_id,
         redirectUri: redirect_uri,
         scope
-    } = (options?.credentials || {})
+    } = (isFunction(credentials) ? credentials() : credentials) || {}
     const {
         prepareState
     } = {
