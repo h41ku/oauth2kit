@@ -1,5 +1,6 @@
-Using with Express.js
----------------------
+# oauth2kit
+
+## Using with Express.js (backend-side of the client)
 
 First one create a client:
 
@@ -80,4 +81,117 @@ app.use('/api', apiRouter) // not authentication is required for this area
 // start app
 app.use(finalize()) // optional, but recommended
 app.listen(3000) // start listening
+```
+
+## Using with ServiceWorker (frontend-side of the client)
+
+Here is example of a service worker:
+
+```js
+import createOAuth2Client from 'oauth2kit/client/serviceWorker'
+
+const oauth2Client = createOAuth2Client({
+    refreshToken: {
+        endpoint: '/api/token',
+        extractAccessToken: async (response) => {
+            const { accessToken } = await (response.clone()).json()
+            return accessToken
+        },
+        extractRefreshRate: async (response) => {
+            const { expiresIn } = await (response.clone()).json()
+            const reservedTime = 5 // in seconds
+            return Math.max(expiresIn - reservedTime, 0)
+        },
+        extractPayload: async (response, accessToken) => {
+            const { authenticatedUser } = await (response.clone()).json()
+            return authenticatedUser
+        },
+        isPayloadChanged: (previous, next) => true // here your need to deep compare object `previous` with object `next`
+    },
+    fetch: {
+        matcher: request => {
+            const { origin, pathname } = new URL(request.url)
+            return request.method === 'GET'
+                && origin === location.origin
+                && /^\/(oauth2|api)\//.test(pathname)
+        },
+        isSignIn: request => {
+            const { origin, pathname } = new URL(request.url)
+            return request.method === 'GET'
+                && origin === location.origin
+                && pathname === '/oauth2/signin'
+        },
+        isSignOut: request => {
+            const { origin, pathname } = new URL(request.url)
+            return request.method === 'GET'
+                && origin === location.origin
+                && pathname === '/oauth2/signout'
+        }
+    }
+})
+
+addEventListener('install', oauth2Client.listeners.install)
+addEventListener('activate', oauth2Client.listeners.activate)
+addEventListener('fetch', oauth2Client.listeners.fetch)
+
+const getState = () => {
+    const { isUndefined, accessToken, payload } = oauth2Client.getState()
+    return {
+        isUndefined,
+        ...(isUndefined ? {} : {
+            isAuthenticated: !!accessToken,
+            payload
+        })
+    }
+}
+
+const createStateMessage = () => ({
+    type: 'state',
+    state: getState()
+})
+
+const sendCurrentStateTo = (client) => client.postMessage(createStateMessage())
+
+oauth2Client.refresher.subscribe(async () => {
+    (await clients.matchAll())
+        .forEach(sendCurrentStateTo)
+})
+
+const checkAuthentication = () => oauth2Client.refresher.start()
+
+addEventListener('message', evt => { // incoming messages from clients
+    const { data, source: client } = evt
+    const { type } = data
+    if (type === 'initClient') { // client notifies about launching itself
+        sendCurrentStateTo(client)
+        checkAuthentication()
+    }
+})
+
+checkAuthentication()
+```
+
+Example of entrypoint of application:
+
+```js
+import getServiceWorker from 'getserviceworker' // easy registration of a service worker
+import initializeApplication from './initializeApplication.js' // an abstract function
+
+const launchApp = async () => {
+    const serviceWorker = await getServiceWorker('/serviceWorker.js', { // bundled code 
+        type: 'module',
+        updateViaCache: 'none'
+    })
+    const serviceWorkerContainer = navigator.serviceWorker
+    serviceWorkerContainer.addEventListener('message', evt => { // incoming messages from serviceWorker.js
+        const { data } = evt
+        if (data.type === 'state') {
+            const { isAuthenticated, payload: authenticatedUser } = data.state
+            initializeApplication({ isAuthenticated, authenticatedUser }) // initialize application with this state
+        }
+    })
+    serviceWorker.postMessage({ type: 'initClient' }) // notify serviceWorker.js about this client
+}
+
+launchApp()
 ```
