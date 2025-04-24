@@ -1,24 +1,26 @@
 import isFunction from '../../../shared/helpers/isFunction.js'
 import query from '../helpers/query.js'
 import extractToken from '../helpers/extractToken.js'
-import { setCookies, clearCookies } from '../helpers/cookies.js'
-import unexpectedProviderError from '../errors/unexpectedProvider.js'
+import { getCookies, setCookies, clearCookies } from '../helpers/cookies.js'
 
-const createContext = (request, provider, accessToken, expiresAt) => {
+const createContext = (request, accessToken, expiresAt) => {
     request.oauth2 = {
-        ...(provider ? { provider } : {}),
         accessToken,
         expiresAt
     }
 }
 
 export default (options = {}) => {
-    const { provider: providerExpected, credentials } = options
+
+    const { credentials } = options
+
     const {
         clientId: client_id,
         clientSecret: client_secret
     } = (isFunction(credentials) ? credentials() : credentials) || {}
+
     const { refreshToken } = (options?.endpoints || {})
+
     const {
         reservedTime,
         header,
@@ -31,15 +33,26 @@ export default (options = {}) => {
         condition: (request) => true,
         ...(options?.plugins?.refreshToken)
     }
+
+    const cookieOptions = options?.plugins?.cookies
+
     return async (request, response, next) => {
-        const { provider, refresh_token, expires_at } = request.cookies
+
+        const { refresh_token, expires_at } = getCookies(request, [
+            'refresh_token',
+            'expires_at'
+        ], cookieOptions)
+
         if (!refresh_token) {
+
             response.status(401).end()
-        } else if (provider !== providerExpected) {
-            unexpectedProviderError(provider, providerExpected)
+
         } else {
+
             const access_token = extractToken(request)
+
             if ((!access_token || (parseInt(expires_at) - reservedTime) * 1000 <= Date.now()) && condition(request)) {
+
                 const { status, data: token } = await query({
                     url: refreshToken,
                     method: 'post',
@@ -52,31 +65,37 @@ export default (options = {}) => {
                     timeout,
                     signal
                 })
+
                 if (status === 0) {
+
                     response.status(503).end()
+
                 } else if (status === 200) {
+
                     const { access_token, refresh_token, expires_in } = token
                     const expires_at = Math.floor(Date.now() / 1000 + expires_in)
                     setCookies(response, {
-                        provider,
                         refresh_token,
                         expires_at
-                    })
+                    }, cookieOptions)
                     if (header) {
                         response.set({ [header]: access_token })
                     }
-                    createContext(request, provider, access_token, expires_at)
+                    createContext(request, access_token, expires_at)
                     next()
+
                 } else {
+
                     clearCookies(response, [
-                        'provider',
                         'refresh_token',
                         'expires_at'
-                    ])
+                    ], cookieOptions)
                     response.status(401).end()
                 }
+
             } else {
-                createContext(request, provider, access_token, parseInt(expires_at))
+
+                createContext(request, access_token, parseInt(expires_at))
                 next()
             }
         }

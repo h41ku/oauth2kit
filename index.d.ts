@@ -43,7 +43,23 @@ export type PluginSignInOptions = {
     prepareState: () => Promise<string>
 };
 
+export type PluginCookieOptions = {
+    prefix?: string,
+    domain?: string,
+    encode?: (source: string) => string,
+    expires?: Date,
+    httpOnly?: boolean,
+    maxAge?: number,
+    path?: string,
+    partitioned?: boolean,
+    priority?: string,
+    secure?: boolean,
+    signed?: boolean,
+    sameSite?: boolean | string
+};
+
 export type PluginsOptions = {
+    cookie?: PluginCookieOptions,
     signIn?: PluginSignInOptions,
     obtainToken?: PluginObtainTokenOptions,
     refreshToken?: PluginRefreshTokenOptions,
@@ -61,7 +77,6 @@ export type OAuth2ClientCredentials = {
 export type OAuth2ClientCredentialsFn = () => OAuth2ClientCredentials;
 
 export type OAuth2ClientOptions = {
-    provider?: string,
     credentials: OAuth2ClientCredentials | OAuth2ClientCredentialsFn,
     endpoints: {
         authorize: string,

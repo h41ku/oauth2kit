@@ -1,7 +1,6 @@
 import isFunction from '../../../shared/helpers/isFunction.js'
 import isString from '../../../shared/helpers/isString.js'
 import query from '../helpers/query.js'
-import unexpectedProviderError from '../errors/unexpectedProvider.js'
 
 const defaultExpectedStatus = 200
 
@@ -11,7 +10,6 @@ const buildFn = (options) => async ({ accessToken, query }) => await query({
 })
 
 export default (options = {}) => {
-    const { provider: providerExpected } = options
     const fnOptions = (options?.plugins?.authenticatedUser || {})
     let getAuthenticatedUser
     let responseOptions = {}
@@ -35,10 +33,7 @@ export default (options = {}) => {
         ...responseOptions
     }
     return async (request, response, next) => {
-        const { provider, accessToken } = (request.oauth2 || {})
-        if (provider !== providerExpected) {
-            unexpectedProviderError(provider, providerExpected)
-        }
+        const { accessToken } = (request.oauth2 || {})
         const { status, data, error } = accessToken
             ? await getAuthenticatedUser({
                 request,

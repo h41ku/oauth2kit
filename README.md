@@ -8,7 +8,6 @@ First one create a client:
 import createOAuth2Client from 'oauth2kit/client/express'
 
 const client = createOAuth2Client({
-    provider: 'example', // name of OAuth2 provider
     credentials: { // client credentials
         clientId: '...',
         clientSecret: '...',

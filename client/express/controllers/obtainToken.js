@@ -4,7 +4,7 @@ import { setCookies } from '../helpers/cookies.js'
 
 export default (options = {}) => {
 
-    const { provider, credentials } = options
+    const { credentials } = options
 
     const {
         errorUrl,
@@ -28,6 +28,8 @@ export default (options = {}) => {
     } = (isFunction(credentials) ? credentials() : credentials) || {}
 
     const { getAccessToken } = (options?.endpoints || {})
+
+    const cookieOptions = options?.plugins?.cookies
 
     return async (request, response) => {
 
@@ -83,10 +85,9 @@ export default (options = {}) => {
             const { refresh_token, expires_in } = data
             const expires_at = Math.floor(Date.now() / 1000 + expires_in)
             setCookies(response, {
-                provider,
                 refresh_token,
                 expires_at
-            })
+            }, cookieOptions)
             response.set({ Location: successUrl })
         }
         response.end()

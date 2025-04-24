@@ -3,7 +3,6 @@ import isString from '../../../shared/helpers/isString.js'
 import query from '../helpers/query.js'
 import { clearCookies } from '../helpers/cookies.js'
 import extractToken from '../helpers/extractToken.js'
-import unexpectedProviderError from '../errors/unexpectedProvider.js'
 
 const buildFn = (options) => async ({ accessToken, query }) => await query({
     ...options,
@@ -11,8 +10,11 @@ const buildFn = (options) => async ({ accessToken, query }) => await query({
 })
 
 export default (options = {}) => {
-    const { provider: providerExpected } = options
+
     const fnOptions = options?.plugins?.signOut
+
+    const cookieOptions = options?.plugins?.cookies
+
     let signOut
     if (!fnOptions) {
         signOut = () => ({ status: 200 })
@@ -23,15 +25,12 @@ export default (options = {}) => {
     } else {
         signOut = buildFn(fnOptions)
     }
+
     return async (request, response) => {
         const accessToken = request.oauth2
             ? request.oauth2.accessToken
             : extractToken(request)
         if (accessToken) {
-            const { provider } = request.cookies
-            if (provider !== providerExpected) {
-                unexpectedProviderError(provider, providerExpected)
-            }
             await signOut({
                 request,
                 response,
@@ -39,7 +38,7 @@ export default (options = {}) => {
                 accessToken
             })
         }
-        clearCookies(response, [ 'provider', 'refresh_token', 'expires_at' ])
+        clearCookies(response, [ 'refresh_token', 'expires_at' ], cookieOptions)
         response.status(204).end()
     }
 }
