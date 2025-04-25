@@ -29,7 +29,7 @@ export type PluginAuthenticatedUserOptions = {
     timeout?: number,
     signal?: AbortSignal,
     expectedStatus?: number,
-    selector: (data: any) => any
+    selector?: (data: any) => any
 };
 
 export type PluginSignOutOptions = {
@@ -80,7 +80,7 @@ export type OAuth2ClientOptions = {
     credentials: OAuth2ClientCredentials | OAuth2ClientCredentialsFn,
     endpoints: {
         authorize: string,
-        getAccessToken: string,
+        obtainToken: string,
         refreshToken: string
     },
     plugins?: PluginsOptions

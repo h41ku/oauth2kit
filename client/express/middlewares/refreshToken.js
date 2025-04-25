@@ -1,7 +1,7 @@
 import isFunction from '../../../shared/helpers/isFunction.js'
 import query from '../helpers/query.js'
-import extractToken from '../helpers/extractToken.js'
-import { getCookies, setCookies, clearCookies } from '../helpers/cookies.js'
+import extractAccessToken from '../helpers/extractAccessToken.js'
+import cookiesPlugin from '../plugins/cookies.js'
 
 const createContext = (request, accessToken, expiresAt) => {
     request.oauth2 = {
@@ -34,14 +34,11 @@ export default (options = {}) => {
         ...(options?.plugins?.refreshToken)
     }
 
-    const cookieOptions = options?.plugins?.cookies
+    const cookies = cookiesPlugin(options)
 
     return async (request, response, next) => {
 
-        const { refresh_token, expires_at } = getCookies(request, [
-            'refresh_token',
-            'expires_at'
-        ], cookieOptions)
+        const { refresh_token, expires_at } = cookies.getToken(request)
 
         if (!refresh_token) {
 
@@ -49,9 +46,9 @@ export default (options = {}) => {
 
         } else {
 
-            const access_token = extractToken(request)
+            const access_token = extractAccessToken(request)
 
-            if ((!access_token || (parseInt(expires_at) - reservedTime) * 1000 <= Date.now()) && condition(request)) {
+            if ((!access_token || (expires_at - reservedTime) * 1000 <= Date.now()) && condition(request)) {
 
                 const { status, data: token } = await query({
                     url: refreshToken,
@@ -74,10 +71,7 @@ export default (options = {}) => {
 
                     const { access_token, refresh_token, expires_in } = token
                     const expires_at = Math.floor(Date.now() / 1000 + expires_in)
-                    setCookies(response, {
-                        refresh_token,
-                        expires_at
-                    }, cookieOptions)
+                    cookies.putToken(response, refresh_token, expires_at)
                     if (header) {
                         response.set({ [header]: access_token })
                     }
@@ -86,16 +80,13 @@ export default (options = {}) => {
 
                 } else {
 
-                    clearCookies(response, [
-                        'refresh_token',
-                        'expires_at'
-                    ], cookieOptions)
+                    cookies.removeToken(response)
                     response.status(401).end()
                 }
 
             } else {
 
-                createContext(request, access_token, parseInt(expires_at))
+                createContext(request, access_token, expires_at)
                 next()
             }
         }

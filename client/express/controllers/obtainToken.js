@@ -1,6 +1,6 @@
 import isFunction from '../../../shared/helpers/isFunction.js'
 import query from '../helpers/query.js'
-import { setCookies } from '../helpers/cookies.js'
+import cookiesPlugin from '../plugins/cookies.js'
 
 export default (options = {}) => {
 
@@ -27,9 +27,9 @@ export default (options = {}) => {
         redirectUri: redirect_uri,
     } = (isFunction(credentials) ? credentials() : credentials) || {}
 
-    const { getAccessToken } = (options?.endpoints || {})
+    const { obtainToken } = (options?.endpoints || {})
 
-    const cookieOptions = options?.plugins?.cookies
+    const cookies = cookiesPlugin(options)
 
     return async (request, response) => {
 
@@ -60,7 +60,7 @@ export default (options = {}) => {
         }
 
         const { status, data, error } = await query({
-            url: getAccessToken,
+            url: obtainToken,
             method: 'post',
             body: new URLSearchParams({
                 grant_type: 'authorization_code',
@@ -84,10 +84,7 @@ export default (options = {}) => {
             response.status(302)
             const { refresh_token, expires_in } = data
             const expires_at = Math.floor(Date.now() / 1000 + expires_in)
-            setCookies(response, {
-                refresh_token,
-                expires_at
-            }, cookieOptions)
+            cookies.putToken(response, refresh_token, expires_at)
             response.set({ Location: successUrl })
         }
         response.end()

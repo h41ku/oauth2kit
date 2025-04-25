@@ -1,35 +1,30 @@
 import isFunction from '../../../shared/helpers/isFunction.js'
 import isString from '../../../shared/helpers/isString.js'
 import query from '../helpers/query.js'
-import { clearCookies } from '../helpers/cookies.js'
-import extractToken from '../helpers/extractToken.js'
-
-const buildFn = (options) => async ({ accessToken, query }) => await query({
-    ...options,
-    payload: accessToken
-})
+import extractAccessToken from '../helpers/extractAccessToken.js'
+import cookiesPlugin from '../plugins/cookies.js'
+import useQuery from '../helpers/useQuery.js'
 
 export default (options = {}) => {
 
-    const fnOptions = options?.plugins?.signOut
+    const cookies = cookiesPlugin(options)
 
-    const cookieOptions = options?.plugins?.cookies
-
+    const x = options?.plugins?.signOut
     let signOut
-    if (!fnOptions) {
+    if (!x) {
         signOut = () => ({ status: 200 })
-    } else if (isFunction(fnOptions)) {
-        signOut = fnOptions
-    } else if (isString(fnOptions)) {
-        signOut = buildFn({ url: fnOptions })
+    } else if (isFunction(x)) {
+        signOut = x
+    } else if (isString(x)) {
+        signOut = useQuery({ url: x })
     } else {
-        signOut = buildFn(fnOptions)
+        signOut = useQuery(x)
     }
 
     return async (request, response) => {
         const accessToken = request.oauth2
             ? request.oauth2.accessToken
-            : extractToken(request)
+            : extractAccessToken(request)
         if (accessToken) {
             await signOut({
                 request,
@@ -38,7 +33,7 @@ export default (options = {}) => {
                 accessToken
             })
         }
-        clearCookies(response, [ 'refresh_token', 'expires_at' ], cookieOptions)
+        cookies.removeToken(response)
         response.status(204).end()
     }
 }

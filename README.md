@@ -16,7 +16,7 @@ const client = createOAuth2Client({
     },
     endpoints: { // endpoints of OAuth2 server
         authorize: 'https://auth.example.org/oauth2/authorize',
-        getAccessToken: 'https://auth.example.org/oauth2/token',
+        obtainToken: 'https://auth.example.org/oauth2/token',
         refreshToken: 'https://auth.example.org/oauth2/token'
     },
     plugins: {

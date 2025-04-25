@@ -1,28 +1,25 @@
 import isFunction from '../../../shared/helpers/isFunction.js'
 import isString from '../../../shared/helpers/isString.js'
 import query from '../helpers/query.js'
+import useQuery from '../helpers/useQuery.js'
 
 const defaultExpectedStatus = 200
 
-const buildFn = (options) => async ({ accessToken, query }) => await query({
-    ...options,
-    payload: accessToken
-})
-
 export default (options = {}) => {
-    const fnOptions = (options?.plugins?.authenticatedUser || {})
+
+    const x = (options?.plugins?.authenticatedUser || {})
     let getAuthenticatedUser
     let responseOptions = {}
-    if (!fnOptions) {
+    if (!x) {
         getAuthenticatedUser = () => ({ status: defaultExpectedStatus })
-    } else if (isFunction(fnOptions)) {
-        getAuthenticatedUser = fnOptions
-    } else if (isString(fnOptions)) {
-        getAuthenticatedUser = buildFn({ url: fnOptions })
+    } else if (isFunction(x)) {
+        getAuthenticatedUser = x
+    } else if (isString(x)) {
+        getAuthenticatedUser = useQuery({ url: x })
     } else {
-        const { selector, expectedStatus, ...queryOptions } = fnOptions
+        const { selector, expectedStatus, ...queryOptions } = x
         responseOptions = { selector, expectedStatus }
-        getAuthenticatedUser = buildFn(queryOptions)
+        getAuthenticatedUser = useQuery(queryOptions)
     }
     const {
         selector,
@@ -32,6 +29,7 @@ export default (options = {}) => {
         expectedStatus: defaultExpectedStatus,
         ...responseOptions
     }
+    
     return async (request, response, next) => {
         const { accessToken } = (request.oauth2 || {})
         const { status, data, error } = accessToken
