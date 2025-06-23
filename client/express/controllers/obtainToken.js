@@ -21,21 +21,22 @@ export default (options = {}) => {
         ...(options?.plugins?.obtainToken || {})
     }
 
-    const {
-        clientId: client_id,
-        clientSecret: client_secret,
-        redirectUri: redirect_uri,
-    } = (isFunction(credentials) ? credentials() : credentials) || {}
-
     const { obtainToken } = (options?.endpoints || {})
 
     const cookies = cookiesPlugin(options)
 
     return async (request, response) => {
 
+        const {
+            clientId: client_id,
+            clientSecret: client_secret,
+            redirectUri: redirect_uri,
+        } = (isFunction(credentials) ? credentials(request) : credentials) || {}
+
         const ErrorPage = ({ error, error_description }) => {
+            const url = isFunction(errorUrl) ? errorUrl(request) : errorUrl
             response.status(302)
-            response.set({ Location: `${errorUrl}?${new URLSearchParams({ error, error_description })}` })
+            response.set({ Location: `${url}?${new URLSearchParams({ error, error_description })}` })
             response.end()
         }
 
@@ -85,7 +86,8 @@ export default (options = {}) => {
             const { refresh_token, expires_in } = data
             const expires_at = Math.floor(Date.now() / 1000 + expires_in)
             cookies.putToken(response, refresh_token, expires_at)
-            response.set({ Location: successUrl })
+            const url = isFunction(successUrl) ? successUrl(request, { scope, state, clientId: client_id, redirectUri: redirect_uri }) : successUrl
+            response.set({ Location: url })
         }
         response.end()
     }
