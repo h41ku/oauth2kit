@@ -6,7 +6,7 @@ export default (options = {}) => async (request, response) => {
         clientId: client_id,
         redirectUri: redirect_uri,
         scope
-    } = (isFunction(credentials) ? credentials() : credentials) || {}
+    } = (isFunction(credentials) ? credentials(request) : credentials) || {}
     const {
         prepareState
     } = {
