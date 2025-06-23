@@ -13,12 +13,6 @@ const createContext = (request, accessToken, expiresAt) => {
 export default (options = {}) => {
 
     const { credentials } = options
-
-    const {
-        clientId: client_id,
-        clientSecret: client_secret
-    } = (isFunction(credentials) ? credentials() : credentials) || {}
-
     const { refreshToken } = (options?.endpoints || {})
 
     const {
@@ -37,6 +31,11 @@ export default (options = {}) => {
     const cookies = cookiesPlugin(options)
 
     return async (request, response, next) => {
+
+        const {
+            clientId: client_id,
+            clientSecret: client_secret
+        } = (isFunction(credentials) ? credentials(request) : credentials) || {}    
 
         const { refresh_token, expires_at } = cookies.getToken(request)
 
