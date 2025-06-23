@@ -6,9 +6,19 @@ export type QueryResponse = {
 
 export type QueryFn = (options?: any) => QueryResponse;
 
+export type SuccessDetails = {
+    scope: string,
+    state: string,
+    clientId: string,
+    redirectUri: string
+};
+
+export type ErrorUrlFn = (request: object) => string;
+export type SuccessUrlFn = (request: object, detail: SuccessDetails) => string;
+
 export type PluginObtainTokenOptions = {
-    errorUrl?: string,
-    successUrl?: string,
+    errorUrl?: string | ErrorUrlFn,
+    successUrl?: string | SuccessUrlFn,
     timeout?: number,
     signal?: AbortSignal,
     acceptState: (state?: string) => Promise<boolean>,
@@ -74,7 +84,7 @@ export type OAuth2ClientCredentials = {
     scope: string
 };
 
-export type OAuth2ClientCredentialsFn = () => OAuth2ClientCredentials;
+export type OAuth2ClientCredentialsFn = (request: object) => OAuth2ClientCredentials;
 
 export type OAuth2ClientOptions = {
     credentials: OAuth2ClientCredentials | OAuth2ClientCredentialsFn,
