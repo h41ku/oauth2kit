@@ -40,7 +40,7 @@ export default (options = {}) => {
                 accessToken
               })
             : { status: 401 }
-        if (status === 0) {
+        if (status === 0 || status === 503) {
             response.status(503)
                 .json({ error: true, message: 'Authentication server is not available.' }).end()
         } else if (error) {

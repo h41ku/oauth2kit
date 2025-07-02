@@ -62,7 +62,7 @@ export default (options = {}) => {
                     signal
                 })
 
-                if (status === 0) {
+                if (status === 0 || status === 503) {
 
                     response.status(503).end()
 
