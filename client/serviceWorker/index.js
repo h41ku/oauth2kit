@@ -1,6 +1,22 @@
 import fetchBaseQuery, { accessToken as accessTokenMiddleware } from 'fetchbasequery'
 
-const INITIAL_REFRESH_RATE = 60 // in seconds
+const INITIAL_REFRESH_RATE = 1 // in seconds
+const MAX_NUM_RETRIES = 3
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+const createRetry = (maxNumRetries, retryDelay, retryCondition) => query => async (target) => {
+    let response
+    for (let i = 0; i < maxNumRetries; i ++) {
+        response = await query({ ...target, request: target.request.clone() })
+        if (retryCondition(response)) {
+            await sleep(retryDelay(i + 1))
+        } else {
+            break
+        }
+    }
+    return response
+}
 
 const serviceWorkerOAuth2Client = (options = {}) => {
     const {
@@ -11,12 +27,21 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         isSignIn,
         isSignOut,
         fallback,
+        maxNumRetries,
+        retryDelay,
+        retryCondition,
         ...defaultQueryOptions
     } = {
         matcher: request => true,
         isSignIn: request => false,
         isSignOut: request => false,
         fallback: fetch,
+        maxNumRetries: MAX_NUM_RETRIES,
+        retryDelay: i => i * 250,
+        retryCondition: response => {
+            const { status } = response
+            return status === 0 || status === 401 || status === 503
+        },
         ...(options.fetch || {})
     }
     const {
@@ -42,6 +67,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         isPayloadChanged: (previous, next) => true,
         ...(options.refreshToken || {})
     }
+    const retry = createRetry(maxNumRetries, retryDelay, retryCondition)
     let isPending
     let isUndefined = true
     let accessToken
@@ -66,7 +92,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         for (let i = 0; i < handlers.length; i ++)
             await handlers[i]()
     }
-    const queryRefresh = fetchBaseQuery({
+    const queryRefresh = retry(fetchBaseQuery({
         logErrors: true,
         credentials: 'include',
         cache: 'reload',
@@ -85,8 +111,8 @@ const serviceWorkerOAuth2Client = (options = {}) => {
                 ...(prepareAuthorizationHeaders ? { getAuthorizationHeaders: prepareAuthorizationHeaders } : {})
             })
         ]
-    })
-    const query = fetchBaseQuery({
+    }))
+    const queryUnsafe = retry(fetchBaseQuery({
         logErrors: true,
         credentials: 'include',
         cache: 'reload',
@@ -98,7 +124,13 @@ const serviceWorkerOAuth2Client = (options = {}) => {
             })
         ],
         ...defaultQueryOptions
-    })
+    }))
+    const query = async (target) => {
+        while (isPending) {
+            await sleep(100)
+        }
+        return await queryUnsafe(target)
+    }
     let timer
     let refreshing
     let dispatchRequired
@@ -109,7 +141,7 @@ const serviceWorkerOAuth2Client = (options = {}) => {
         isPending = true
         const previousAccessToken = accessToken
         const previousPayload = payload
-        const response = await queryRefresh({ url: endpoint })
+        const response = await queryRefresh({ request: new Request(endpoint) })
         if (isExpectedStatus(response.status)) {
             payload = accessToken
                 ? await extractPayload(response, { query, accessToken })

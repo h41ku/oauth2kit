@@ -30,12 +30,17 @@ declare module 'oauth2kit/client/serviceWorker' {
 
     export type Matcher = (request: Request) => boolean;
     export type Fetcher = (request: Request) => Promise<Response>;
+    export type RetryDelay = (numTries: number) => number;
+    export type RetryCondition = (response: Response) => boolean;
 
     export type ServiceWorkerFetchOptions = {
         matcher?: Matcher,
         isSignIn?: Matcher,
         isSignOut?: Matcher,
-        fallback?: Fetcher
+        fallback?: Fetcher,
+        maxNumRetries?: number,
+        retryDelay?: RetryDelay,
+        retryCondition: RetryCondition
     };
 
     export type StatusMatcher = (status: number) => boolean;
